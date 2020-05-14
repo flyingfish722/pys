@@ -88,16 +88,6 @@ for each in [tm_data, jd_data]:
         each.loc[idx, 'conv_rate_relative'] = each.loc[idx, 'conv_rate'] / each.loc[idx, 'conv_rate'].sum()
         each.loc[idx, 'conv_rate_relative'] = each.loc[idx, 'conv_rate_relative'].fillna(0)
 
-    # 相对特征值为0的打分
-    for _ in ['uv_relative',
-              'pv_relative',
-              'atc_num_relative',
-              'atc_rate_relative',
-              'conv_rate_relative',
-              ]:
-        idx = each.loc[(each.date >= begin_date) & (each[_] == 0)].index
-        each.loc[idx, _+'_score'] = 0
-
 tm_data.to_csv('../tm.csv', encoding='ansi')
 
 
