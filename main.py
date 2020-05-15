@@ -6,6 +6,24 @@ from functions import *
 warnings.filterwarnings('ignore')
 encoding = 'utf8'
 data_path = '../bb20200401-20200501.csv'
+# k-means parameters
+n_clusters = {
+    'uv_relative': 4,
+    'pv_relative': 4,
+    'atc_num_relative': 4,
+    'an_rate_relative': 4,
+    'trans_rate_relative': 4,
+}
+# for k = 4
+scores = [25, 50, 75, 100]
+# score weights
+score_weights = {
+    'score_uv_relative': 0.23,
+    'score_pv_relative': 0.23,
+    'score_atc_num_relative': 0.22,
+    'score_an_rate_relative': 0.1,
+    'score_trans_rate_relative': 0.22,
+}
 
 # 读取数据，检查日期周期
 original_data = pandas.read_csv(data_path, encoding=encoding)
@@ -19,8 +37,8 @@ data.original_retail_price = data.original_retail_price.fillna(0)
 # sys.exit(0)
 
 tmp = []
-for each in data.data_date:
-    tmp.append(str2date(each))
+for date_str in data.data_date:
+    tmp.append(str2date(date_str))
 data['date'] = pandas.Series(tmp)
 days = (data.iloc[-1].date - data.loc[0, 'date']).days - 29
 if days < 0:
@@ -52,43 +70,68 @@ scoring_data = data.loc[(((data.xvnew == 1)
                           | (data.original_retail_price == 0)
                           | ((data.uv == 0) & (data.pay_num == 0) & (data.inv == 0)))
                          & (data.date >= begin_date)) == False]
+platforms = []
+tmp = list(set(scoring_data.platform))
+for each_pf in tmp:
+    idx = scoring_data.loc[(scoring_data.platform == each_pf)
+                           & ((scoring_data.status == '出售中')
+                              | (scoring_data.status == '上架'))].index
+    pf_data = scoring_data.loc[idx]
+    platforms.append((idx, pf_data))
+# tm_data = scoring_data.loc[(scoring_data.platform == 'TM') & (scoring_data.status == '出售中')]
+# jd_data = scoring_data.loc[(scoring_data.platform == 'JD') & (scoring_data.status == '上架')]
 
-tm_data = scoring_data.loc[(scoring_data.platform == 'TM') & (scoring_data.status == '出售中')]
-jd_data = scoring_data.loc[(scoring_data.platform == 'JD') & (scoring_data.status == '上架')]
 
-
-for each in [tm_data, jd_data]:
+for pf_idx, platform in platforms:
     # 特征值（绝对值）
-    idx = each.loc[(each.pv == 0) & (each.date >= begin_date) & (each.atc_num == 0)].index
-    each.loc[idx, 'atc_rate'] = 0
-    idx = each.loc[(each.pv == 0) & (each.date >= begin_date) & (each.atc_num != 0)].index
-    each.loc[idx, 'atc_rate'] = 1
-    idx = each.loc[(each.pv == 0) & (each.date >= begin_date)].index
-    each.loc[idx, 'conv_rate'] = 0
-    idx = each.loc[(each.pv != 0) & (each.date >= begin_date)].index
-    each.loc[idx, 'atc_rate'] = each.loc[idx, 'atc_num'] / each.loc[idx, 'pv']
-    each.loc[idx, 'conv_rate'] = each.loc[idx, 'pay_num'] / each.loc[idx, 'pv']
-    idx = each.loc[each.atc_rate > 1].index
-    each.loc[idx, 'atc_rate'] = 1
-    idx = each.loc[each.conv_rate > 1].index
-    each.loc[idx, 'conv_rate'] = 1
+    idx = platform.loc[(platform.pv == 0) & (platform.date >= begin_date)].index
+    platform.loc[idx, 'trans_rate'] = 0
+    platform.loc[idx, 'an_rate'] = 0
+    idx = platform.loc[(platform.pv != 0) & (platform.date >= begin_date)].index
+    platform.loc[idx, 'an_rate'] = platform.loc[idx, 'atc_num'] / platform.loc[idx, 'pv']
+    platform.loc[idx, 'trans_rate'] = platform.loc[idx, 'pay_num'] / platform.loc[idx, 'pv']
+    idx = platform.loc[platform.an_rate > 1].index
+    platform.loc[idx, 'an_rate'] = 1
+    idx = platform.loc[platform.trans_rate > 1].index
+    platform.loc[idx, 'trans_rate'] = 1
 
     # 特征值（相对）
     for _ in range(days + 1):
         tmp = begin_date + datetime.timedelta(days=_)
-        idx = each.loc[each.date == tmp].index
-        each.loc[idx, 'uv_relative'] = each.loc[idx, 'uv'] / each.loc[idx, 'uv'].sum()
-        each.loc[idx, 'uv_relative'] = each.loc[idx, 'uv_relative'].fillna(0)
-        each.loc[idx, 'pv_relative'] = each.loc[idx, 'pv'] / each.loc[idx, 'pv'].sum()
-        each.loc[idx, 'pv_relative'] = each.loc[idx, 'pv_relative'].fillna(0)
-        each.loc[idx, 'atc_num_relative'] = each.loc[idx, 'atc_num'] / each.loc[idx, 'atc_num'].sum()
-        each.loc[idx, 'atc_num_relative'] = each.loc[idx, 'atc_num_relative'].fillna(0)
-        each.loc[idx, 'atc_rate_relative'] = each.loc[idx, 'atc_rate'] / each.loc[idx, 'atc_rate'].sum()
-        each.loc[idx, 'atc_rate_relative'] = each.loc[idx, 'atc_rate_relative'].fillna(0)
-        each.loc[idx, 'conv_rate_relative'] = each.loc[idx, 'conv_rate'] / each.loc[idx, 'conv_rate'].sum()
-        each.loc[idx, 'conv_rate_relative'] = each.loc[idx, 'conv_rate_relative'].fillna(0)
+        idx = platform.loc[platform.date == tmp].index
+        platform.loc[idx, 'uv_relative'] = platform.loc[idx, 'uv'] / platform.loc[idx, 'uv'].sum()
+        platform.loc[idx, 'uv_relative'] = platform.loc[idx, 'uv_relative'].fillna(0)
+        platform.loc[idx, 'pv_relative'] = platform.loc[idx, 'pv'] / platform.loc[idx, 'pv'].sum()
+        platform.loc[idx, 'pv_relative'] = platform.loc[idx, 'pv_relative'].fillna(0)
+        platform.loc[idx, 'atc_num_relative'] = platform.loc[idx, 'atc_num'] / platform.loc[idx, 'atc_num'].sum()
+        platform.loc[idx, 'atc_num_relative'] = platform.loc[idx, 'atc_num_relative'].fillna(0)
+        platform.loc[idx, 'an_rate_relative'] = platform.loc[idx, 'an_rate'] / platform.loc[idx, 'an_rate'].sum()
+        platform.loc[idx, 'an_rate_relative'] = platform.loc[idx, 'an_rate_relative'].fillna(0)
+        platform.loc[idx, 'trans_rate_relative'] = platform.loc[idx, 'trans_rate'] / platform.loc[idx, 'trans_rate'].sum()
+        platform.loc[idx, 'trans_rate_relative'] = platform.loc[idx, 'trans_rate_relative'].fillna(0)
 
-tm_data.to_csv('../tm.csv', encoding='ansi')
+        # 对流量，访客，加购，加购率，转化率分别打分
+        for column in ['uv_relative',
+                       'pv_relative',
+                       'atc_num_relative',
+                       'an_rate_relative',
+                       'trans_rate_relative',
+                       ]:
+            idx = platform.loc[(platform.date == tmp) & (platform[column] == 0)].index
+            platform.loc[idx, 'score_'+column] = 0
+            idx = platform.loc[(platform.date == tmp) & (platform[column] != 0)].index
+            score_result = get_scores_of_best_kmeans_model(platform.loc[idx, column],
+                                                           n_clusters[column],
+                                                           scores)
+            platform.loc[idx, 'score_'+column] = score_result
+    idx = platform.loc[platform.date >= begin_date].index
+    platform.loc[idx, 'heat_today'] = 0
+    for score, weight in score_weights.items():
+        platform.loc[idx, 'heat_today'] += platform.loc[idx, score] * weight
+
+
+platforms[0][1].to_csv('../pf.csv', encoding='ansi')
+# tm_data.to_csv('../tm.csv', encoding='ansi')
 
 
 
