@@ -3,6 +3,7 @@ import datetime
 from sklearn.cluster import KMeans
 import numpy as np
 
+
 def str2date(s):
     # str -> date
     ptn = r'(\d+)/(\d+)/(\d+)'
