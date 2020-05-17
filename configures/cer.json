@@ -1,0 +1,36 @@
+{
+  "comment1": "k-means算法在不同字段的分类数K的取值",
+  "n_clusters":{
+    "pay_num_relative": 5,
+    "pay_amount_relative": 5,
+    "inv": 4,
+    "inv_turn": 4,
+    "week_chain": 4,
+    "discount": 4,
+    "price": 4
+  },
+
+  "comment2": "打分",
+  "scores": {
+    "4": [25, 50, 75, 100],
+    "5": [20, 40, 60, 80, 100]
+  },
+
+  "comment3": "计算cer_n时，不同字段得分的权重",
+  "score_weights":{
+      "score_pay_num_relative": 0.21,
+      "score_pay_amount_relative": 0.21,
+      "score_inv": 0.14,
+      "score_inv_turn": 0.1,
+      "score_week_chain": 0.13,
+      "score_discount": 0.15,
+      "score_price": 0.06
+  },
+
+  "comment4": "计算cer时，不同周期的权重",
+  "n_weights": {
+      "1": 0.25,
+      "7": 0.5,
+      "30": 0.25
+  }
+}

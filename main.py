@@ -1,45 +1,28 @@
 import pandas
 import sys
+import json
 import warnings
 import datetime
-from functions import *
+from score import *
 
-pandas.options.display.max_rows = None
-warnings.filterwarnings('ignore')
-encoding = 'utf8'
-data_path = '../bb20200401-20200501.csv'
-# k-means parameters
-n_clusters = {
-    'uv_relative': 4,
-    'pv_relative': 4,
-    'atc_num_relative': 4,
-    'an_rate_relative': 4,
-    'trans_rate_relative': 4,
-}
-# for k = 4
-scores = [25, 50, 75, 100]
-# score weights
-score_weights = {
-    'score_uv_relative': 0.23,
-    'score_pv_relative': 0.23,
-    'score_atc_num_relative': 0.22,
-    'score_an_rate_relative': 0.1,
-    'score_trans_rate_relative': 0.22,
-}
-# n: weight
-n_weights = {
-    '1': 0.25,
-    '7': 0.5,
-    '30': 0.25,
-}
+pandas.options.display.max_rows = None  # 展开行
+warnings.filterwarnings('ignore')  # 忽略报警
+with open("./configures/global.json") as f:
+    global_config = json.load(f)
+    encoding = global_config["encoding"]
+    data_path = global_config["data_path"]
 
 # 读取数据，检查日期周期
 original_data = pandas.read_csv(data_path, encoding=encoding)
 columns = ['data_date', 'platform', 'item_code', 'status',
            'list_date', 'inv', 'uv', 'pv', 'pay_num',
-           'atc_num',
+           'atc_num', 'pay_amount', 'pay_retailamount',
            'original_retail_price']
 data = original_data[columns]
+if data[['data_date', 'platform', 'item_code', 'inv',
+        'uv', 'pv', 'pay_num', 'atc_num', 'pay_amount',
+        'pay_retailamount']].isnull().any().any():
+    print("数据中存在空值，请检查后再试一次")
 data.original_retail_price = data.original_retail_price.fillna(0)
 # print(data.isnull().any())
 # sys.exit(0)
@@ -60,6 +43,13 @@ print('-'*30)
 new_items = data.loc[data.data_date == data.list_date]
 original_data.loc[new_items.index, 'heat'] = 0
 original_data.loc[new_items.index, 'cer'] = 50
+original_data["trans_rate"] = None
+original_data[ "an_rate"] = None
+original_data.loc[new_items.index, 'xvnew'] = 1
+original_data["inv_turn"] = None
+original_data["week_chain"] = None
+original_data["discount"] = None
+original_data["price"] = None
 data.loc[new_items.index, 'xvnew'] = 1
 
 for _ in range(days+1):
@@ -87,93 +77,22 @@ for each_pf in tmp:
 # tm_data = scoring_data.loc[(scoring_data.platform == 'TM') & (scoring_data.status == '出售中')]
 # jd_data = scoring_data.loc[(scoring_data.platform == 'JD') & (scoring_data.status == '上架')]
 
+# 计算热度
+print("开始计算热度")
+print('-' * 30)
+calculate_heat(platforms, original_data, scoring_data, begin_date, days)
+print("热度计算完成")
+print('-' * 30)
 
-for platform in platforms:
-    print("平台：", platform.iloc[0]['platform'])
-    # 特征值（绝对值）
-    idx = platform.loc[platform.pv == 0].index
-    platform.loc[idx, 'trans_rate'] = 0
-    platform.loc[idx, 'an_rate'] = 0
-    idx = platform.loc[platform.pv != 0].index
-    platform.loc[idx, 'an_rate'] = platform.loc[idx, 'atc_num'] / platform.loc[idx, 'pv']
-    platform.loc[idx, 'trans_rate'] = platform.loc[idx, 'pay_num'] / platform.loc[idx, 'pv']
-    idx = platform.loc[platform.an_rate > 1].index
-    platform.loc[idx, 'an_rate'] = 1
-    idx = platform.loc[platform.trans_rate > 1].index
-    platform.loc[idx, 'trans_rate'] = 1
+# 计算热度
+print("开始计算效度")
+print('-' * 30)
+calculate_cer(platforms, original_data, scoring_data, begin_date, days)
+print("效度计算完成")
+print('-' * 30)
 
-    # 特征值（相对）
-    for each_day in set(scoring_data.date):
-        idx = platform.loc[platform.date == each_day].index
-        for cl in ['uv', 'pv', 'atc_num', 'an_rate', 'trans_rate']:
-            platform.loc[idx, cl+'_relative_1'] = platform.loc[idx, cl] / platform.loc[idx, cl].sum()
-            platform.loc[idx, cl+'_relative_1'] = platform.loc[idx, cl+'_relative_1'].fillna(0)
 
-    idx = platform.loc[platform.date >= begin_date].index
-    for n in n_weights.keys():
-        # 计算出当天的_7 _30
-        if n != '1':
-            n_days = int(n)
-            for i in idx:
-                today_date = platform.loc[i, 'date']
-                if platform.loc[i, 'list_date']:
-                    list_date = str2date(platform.loc[i, 'list_date'])
-                    interval = (today_date - list_date).days + 1
-                    if 0 < interval < n_days:
-                        origin = list_date
-                    else:
-                        origin = today_date - datetime.timedelta(n_days - 1)
-                        interval = n_days
-                else:
-                    origin = today_date - datetime.timedelta(n_days - 1)
-                    interval = n_days
-                n_days_data = platform.loc[(origin <= platform.date)
-                                           & (platform.date <= today_date)
-                                           & (platform.item_code == platform.loc[i, 'item_code'])]
-                for cl in ['uv', 'pv', 'atc_num', 'an_rate', 'trans_rate']:
-                    tmp = cl+'_relative_'
-                    platform.loc[i, tmp+n] = n_days_data[tmp+str(1)].sum()/interval * n_days
-                print("\r处理完%d的_%s相对特征" % (i, n), end='', flush=True)
-            print()
-    print()
-            # platform.to_csv('../tm.csv', encoding='ansi')
-            # sys.exit(0)
-    for _ in range(days + 1):
-        today_date = begin_date + datetime.timedelta(days=_)
-        print(today_date, ": ")
-        # 分别对不同n的属性打分
-        for n in n_weights.keys():
-            print("对_%s特征进行打分" % n)
-            for cl, k in n_clusters.items():
-                tmp = cl+'_'+n
-                idx = platform.loc[(platform.date == today_date) & (platform[tmp] == 0)].index
-                platform.loc[idx, 'score_'+tmp] = 0
-                idx = platform.loc[(platform.date == today_date) & (platform[tmp] != 0)].index
-                try:
-                    score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
-                                                                   k,
-                                                                   scores)
-                except ValueError:
-                    print(tmp)
-                    platform.to_csv('../exception.csv', encoding='ansi')
-                    sys.exit(0)
-                platform.loc[idx, 'score_'+tmp] = score_result
-        print()
-    idx = platform.loc[platform.date >= begin_date].index
-    platform.loc[idx, 'heat'] = 0
-    for n, n_weight in n_weights.items():
-        platform.loc[idx, 'heat_'+n] = 0
-        # 根据特征计算heat_n
-        print("计算heat_"+n)
-        for score, score_weight in score_weights.items():
-            platform.loc[idx, 'heat_'+n] += platform.loc[idx, score+'_'+n] * score_weight
-        # 计算最终heat
-        platform.loc[idx, 'heat'] += platform.loc[idx, 'heat_'+n] * n_weight
-    print("计算heat")
-    original_data.loc[platform.index, 'heat'] = platform.heat
-    print('-' * 30)
-
-original_data.to_csv('../label.csv', encoding='ansi')
+original_data.to_csv('../label.csv', encoding='ansi', index=None)
 # tm_data.to_csv('../tm.csv', encoding='ansi')
 
 
