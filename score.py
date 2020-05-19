@@ -42,7 +42,7 @@ def calculate_heat(platforms, original_data, scoring_data, begin_date, days):
                     for cl in ['uv', 'pv', 'atc_num', 'an_rate', 'trans_rate']:
                         tmp = cl + '_relative_'
                         platform.loc[i, tmp + n] = n_days_data[tmp + str(1)].sum() / interval * n_days
-                    print("\r处理完%d的_%s相对特征" % (i, n), end='', flush=True)
+                    print("\r计算index:%d的_%s相对特征" % (i, n), end='', flush=True)
                 print()
         print()
         # platform.to_csv('../tm.csv', encoding='ansi')
@@ -121,16 +121,23 @@ def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
 
                 for i in idx:
                     n14_days_data, n14_interval = get_n_days_data_for_one_item(platform, 14, i)
-                    platform.loc[i, "inv_turn_1"] = \
-                        n14_days_data.loc[i, "inv"] / \
-                        (n14_days_data.pay_num.sum() / n14_interval * 14 / 2 + 1)
+                    pay_num_n14 = n14_days_data.pay_num.sum() / n14_interval * 14
+                    if pay_num_n14 == 0:
+                        platform.loc[i, "inv_turn_1"] = n14_days_data.loc[i, "inv"]
+                    else:
+                        platform.loc[i, "inv_turn_1"] = \
+                            n14_days_data.loc[i, "inv"] / (pay_num_n14 / 2)
                     if n14_interval < 14:
                         platform.loc[i, "week_chain_1"] = -1
                     else:
                         n7_days_data, n7_interval = get_n_days_data_for_one_item(platform, 7, i)
-                        platform.loc[i, "week_chain_1"] = \
-                            n7_days_data.pay_num.sum() / \
-                            (n14_days_data.pay_num.sum() - n7_days_data.pay_num.sum() + 1)
+                        pay_num_n8_14 = n14_days_data.pay_num.sum() - n7_days_data.pay_num.sum()
+                        if pay_num_n8_14 == 0:
+                            platform.loc[i, "week_chain_1"] = n7_days_data.pay_num.sum()
+                        else:
+                            platform.loc[i, "week_chain_1"] = \
+                                n7_days_data.pay_num.sum() / \
+                                (n14_days_data.pay_num.sum() - n7_days_data.pay_num.sum() + 1)
                     print("\r计算index: %d的周转，周环比" % (i), end="", flush=True)
                 print()
 

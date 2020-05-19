@@ -1,4 +1,5 @@
 {
-  "encoding": "utf8",
-  "data_path": "../bb20200401-20200501.csv"
+    "encoding": "utf8",
+    "root_dir": "E:/github/label program",
+    "data_path": "E:/github/label program/data/bb04.10-0509.csv"
 }

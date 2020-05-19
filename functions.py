@@ -6,6 +6,8 @@ import numpy as np
 
 def str2date(s):
     # str -> date
+    if not s:
+        return None
     ptn = r'(\d+)/(\d+)/(\d+)'
     m = re.search(ptn, s)
     return datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
