@@ -21,6 +21,7 @@ global_config = {
 }
 with open(p, "w") as f:
     json.dump(global_config, f, indent=4)
+sys.exit(0)
 try:
     label()
 except Exception as e:

@@ -1,17 +1,21 @@
 from functions import *
 import json
 import sys
+import time
 
-
+a = 1
 def calculate_heat(platforms, original_data, scoring_data, begin_date, days):
+    global a
+
     with open("./configures/heat.json", encoding='utf') as f:
         config_heat = json.load(f)
         n_clusters = config_heat['n_clusters']
         scores = config_heat['scores']
         score_weights = config_heat['score_weights']
         n_weights = config_heat['n_weights']
-
     for platform in platforms:
+        begin_time = time.time()
+        p_begin_time = begin_time
         print("平台：", platform.iloc[0]['platform'])
         # 特征值（绝对值）
         idx = platform.loc[platform.pv == 0].index
@@ -44,6 +48,10 @@ def calculate_heat(platforms, original_data, scoring_data, begin_date, days):
                         platform.loc[i, tmp + n] = n_days_data[tmp + str(1)].sum() / interval * n_days
                     print("\r计算index:%d的_%s相对特征" % (i, n), end='', flush=True)
                 print()
+                end_time = time.time()
+                print("时间段%d：计算index:%d的_%s相对特征，用时%.2fs" % (a, i, n, end_time-begin_time))
+                a += 1
+                begin_time = end_time
         print()
         # platform.to_csv('../tm.csv', encoding='ansi')
         # sys.exit(0)
@@ -79,12 +87,20 @@ def calculate_heat(platforms, original_data, scoring_data, begin_date, days):
             # 计算最终heat
             platform.loc[idx, 'heat'] += platform.loc[idx, 'heat_' + n] * n_weight
         print("计算heat")
+        end_time = time.time()
+        print("时间段%d：计算heat，用时%.2fs" % (a, end_time - begin_time))
+        a += 1
         original_data.loc[platform.index, ["heat", "trans_rate", "an_rate"]] = \
             platform[["heat", "trans_rate", "an_rate"]]
+        end_time = time.time()
+        print("时间段%d：%s店铺热度计算完成，用时%.2fs" % (a, platform.platform.iloc[0], end_time - p_begin_time))
+        a += 1
         print('-' * 30)
 
 
 def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
+    global a
+
     with open("./configures/cer.json", encoding='utf') as f:
         config_heat = json.load(f)
         n_clusters = config_heat['n_clusters']
@@ -93,6 +109,8 @@ def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
         n_weights = config_heat['n_weights']
 
     for platform in platforms:
+        begin_time = time.time()
+        p_begin_time = begin_time
         print("平台：", platform.iloc[0]['platform'])
         # 特征值（绝对值）
 
@@ -138,9 +156,12 @@ def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
                             platform.loc[i, "week_chain_1"] = \
                                 n7_days_data.pay_num.sum() / \
                                 (n14_days_data.pay_num.sum() - n7_days_data.pay_num.sum() + 1)
-                    print("\r计算index: %d的周转，周环比" % (i), end="", flush=True)
+                    print("\r计算index: %d的周转，周环比" % i, end="", flush=True)
                 print()
-
+                end_time = time.time()
+                print("时间段%d：计算index: %d的周转，周环比，用时%.2fs" % (a, i, end_time - begin_time))
+                begin_time = end_time
+                a += 1
             else:
                 n_days = int(n)
                 for i in idx:
@@ -157,6 +178,10 @@ def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
                                                n_days_data[denominator].sum()
                     print("\r计算index: %d的_%s特征" % (i, n), end="", flush=True)
                 print()
+                end_time = time.time()
+                print("时间段%d：计算index: %d的%s特征，用时%.2fs" % (a, i, n, end_time - begin_time))
+                begin_time = end_time
+                a += 1
                 tmp = "discount" + '_' + n
                 platform.loc[idx, tmp] = platform.loc[idx, tmp].fillna(1)
                 idx_ = platform.loc[platform[tmp] > 1].index
@@ -220,6 +245,10 @@ def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
             # 计算最终cer
             platform.loc[idx, 'cer'] += platform.loc[idx, 'cer_' + n] * n_weight
         print("计算cer")
+        end_time = time.time()
+        print("时间段%d：计算cer，用时%.2fs" % (a, end_time - begin_time))
+        begin_time = end_time
+        a += 1
         for _ in ["cer", "inv_turn", "week_chain", "discount", "price"]:
             if _ == "cer":
                 original_data.loc[platform.index, _] = \
@@ -227,4 +256,7 @@ def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
             else:
                 original_data.loc[platform.index, _] = \
                     platform[_+"_1"]
+        end_time = time.time()
+        print("时间段%d：%s店铺效度计算完成，用时%.2fs" % (a, platform.platform.iloc[0], end_time - p_begin_time))
+        a += 1
         print('-' * 30)

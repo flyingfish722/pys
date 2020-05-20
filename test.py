@@ -5,16 +5,19 @@ import datetime
 import json
 import sys
 import os
-
-from functions import *
+import random
+import functions
+import copy
 
 data = pandas.Series([1,2,], index = [1,2,])
 
 data2 = pandas.DataFrame([[1,2,3],[4,5,6],[4,5,6]], columns=["a", "b", "c"])
 data3 = pandas.DataFrame([[40,50,60],[40,50,60]], columns=["a", "b", "c"])
-print(sys.argv[0])
-print(os.path.abspath(""))
-print(os.path.abspath(sys.argv[0]))
+a = {4: 40, 3: 30, 2: 20, 1: 10}
+
+a[10] = 100
+for _ in range(10):
+    print(a)
 
 # original_data = pandas.read_csv("../bb20200401-20200501.csv", encoding='utf8')
 # platform = pandas.read_csv("../123.csv", encoding='ansi', index_col=0)

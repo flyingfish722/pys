@@ -1,29 +1,27 @@
 {
-  "comment1": "k-means算法在不同字段的分类数K的取值",
-  "n_clusters":{
-    "uv_relative": 4,
-    "pv_relative": 4,
-    "atc_num_relative": 4,
-    "an_rate_relative": 4,
-    "trans_rate_relative": 4
-  },
-
-  "comment2": "for k = 4",
-  "scores": [25, 50, 75, 100],
-
-  "comment3": "计算cer_n时，不同字段得分的权重",
-  "score_weights":{
-      "score_uv_relative": 0.23,
-      "score_pv_relative": 0.23,
-      "score_atc_num_relative": 0.22,
-      "score_an_rate_relative": 0.1,
-      "score_trans_rate_relative": 0.22
-  },
-
-  "comment4": "计算cer时，不同周期的权重",
-  "n_weights": {
-      "1": 0.25,
-      "7": 0.5,
-      "30": 0.25
-  }
+    "n_clusters": {
+        "uv_relative": 4,
+        "pv_relative": 4,
+        "atc_num_relative": 4,
+        "an_rate_relative": 4,
+        "trans_rate_relative": 4
+    },
+    "scores": [
+        25,
+        50,
+        75,
+        100
+    ],
+    "score_weights": {
+        "score_uv_relative": 0.23,
+        "score_pv_relative": 0.23,
+        "score_atc_num_relative": 0.22,
+        "score_an_rate_relative": 0.1,
+        "score_trans_rate_relative": 0.22
+    },
+    "n_weights": {
+        "1": 0.25,
+        "7": 0.5,
+        "30": 0.25
+    }
 }

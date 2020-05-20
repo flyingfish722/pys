@@ -1,5 +1,5 @@
 {
     "encoding": "utf8",
-    "root_dir": "E:/github/label program",
-    "data_path": "E:/github/label program/data/bb04.10-0509.csv"
+    "data_path": "../data/bb.csv",
+    "result_path": "../result/bblabel.csv"
 }
