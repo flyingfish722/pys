@@ -2,14 +2,20 @@ import re
 import datetime
 from sklearn.cluster import KMeans
 import numpy as np
+import sys
 
 
 def str2date(s):
     # str -> date
-    if not s:
-        return None
     ptn = r'(\d+)/(\d+)/(\d+)'
-    m = re.search(ptn, s)
+    if s == 'old':
+        return None
+    try:
+        m = re.search(ptn, s)
+    except TypeError as e:
+        print(e)
+        print(s, "格式错误")
+        sys.exit(0)
     return datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
 
 
@@ -34,7 +40,7 @@ def get_scores_of_best_kmeans_model(sr, n_clusters, scores):
 
 def get_n_days_data_for_one_item(platform, n_days, i):
     today_date = platform.loc[i, 'date']
-    if platform.loc[i, 'list_date']:
+    if platform.loc[i, 'list_date'] != 'old':
         list_date = str2date(platform.loc[i, 'list_date'])
         interval = (today_date - list_date).days + 1
         if 0 < interval < n_days:

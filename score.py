@@ -2,12 +2,14 @@ from functions import *
 import json
 import sys
 import time
-
+import os
 a = 1
-def calculate_heat(platforms, original_data, scoring_data, begin_date, days):
+
+
+def calculate_heat(platforms, original_data, scoring_data, begin_date, days, root_dir):
     global a
 
-    with open("./configures/heat.json", encoding='utf') as f:
+    with open(os.path.join(root_dir,"configures","heat.json"), encoding='utf') as f:
         config_heat = json.load(f)
         n_clusters = config_heat['n_clusters']
         scores = config_heat['scores']
@@ -66,14 +68,10 @@ def calculate_heat(platforms, original_data, scoring_data, begin_date, days):
                     idx = platform.loc[(platform.date == today_date) & (platform[tmp] == 0)].index
                     platform.loc[idx, 'score_' + tmp] = 0
                     idx = platform.loc[(platform.date == today_date) & (platform[tmp] != 0)].index
-                    try:
-                        score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
-                                                                       k,
-                                                                       scores)
-                    except ValueError:
-                        print(tmp)
-                        platform.to_csv('../exception.csv', encoding='ansi')
-                        sys.exit(0)
+
+                    score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
+                                                                   k,
+                                                                   scores)
                     platform.loc[idx, 'score_' + tmp] = score_result
             print()
         idx = platform.loc[platform.date >= begin_date].index
@@ -98,10 +96,10 @@ def calculate_heat(platforms, original_data, scoring_data, begin_date, days):
         print('-' * 30)
 
 
-def calculate_cer(platforms, original_data, scoring_data, begin_date, days):
+def calculate_cer(platforms, original_data, scoring_data, begin_date, days, root_dir):
     global a
 
-    with open("./configures/cer.json", encoding='utf') as f:
+    with open(os.path.join(root_dir,"configures","cer.json"), encoding='utf') as f:
         config_heat = json.load(f)
         n_clusters = config_heat['n_clusters']
         scores = config_heat['scores']

@@ -9,11 +9,11 @@ import score
 import time
 
 
-def label():
+def label(root_dir):
     # pandas.options.display.max_rows = None  # 展开行
     warnings.filterwarnings('ignore')  # 忽略报警
     begin_time = time.time()
-    p = os.path.join(os.path.dirname(sys.argv[0]), "configures", "global.json")
+    p = os.path.join(root_dir, "configures", "global.json")
     with open(p) as f:
         global_config = json.load(f)
         encoding = global_config["encoding"]
@@ -21,11 +21,13 @@ def label():
 
     # 读取数据，检查日期周期
     original_data = pandas.read_csv(data_path, encoding=encoding)
+    result = original_data[['id']]
     columns = ['data_date', 'platform', 'item_code', 'status',
                'list_date', 'inv', 'uv', 'pv', 'pay_num',
                'atc_num', 'pay_amount', 'pay_retailamount',
                'original_retail_price']
     data = original_data[columns]
+    data.list_date = data.list_date.fillna("old")
     if data[['data_date', 'platform', 'item_code', 'inv',
             'uv', 'pv', 'pay_num', 'atc_num', 'pay_amount',
             'pay_retailamount']].isnull().any().any():
@@ -46,21 +48,21 @@ def label():
     print('-'*30)
     # 确定上架首日的新品
     new_items = data.loc[data.data_date == data.list_date]
-    original_data.loc[new_items.index, 'heat'] = 0
-    original_data.loc[new_items.index, 'cer'] = 50
-    original_data["trans_rate"] = None
-    original_data[ "an_rate"] = None
-    original_data.loc[new_items.index, 'xvnew'] = 1
-    original_data["inv_turn"] = None
-    original_data["week_chain"] = None
-    original_data["discount"] = None
-    original_data["price"] = None
+    result.loc[new_items.index, 'heat'] = 0
+    result.loc[new_items.index, 'cer'] = 50
+    result["trans_rate"] = None
+    result["an_rate"] = None
+    result.loc[new_items.index, 'xvnew'] = 1
+    result["inv_turn"] = None
+    result["week_chain"] = None
+    result["discount"] = None
+    result["price"] = None
     data.loc[new_items.index, 'xvnew'] = 1
-    idx_ld = data.list_date[data.list_date.isnull() == False].index
+    idx_ld = data.list_date[data.list_date != 'old'].index
     td = data.loc[idx_ld, "date"] - data.loc[idx_ld, "list_date_date"]
     td_ = td.apply(lambda x: x.days)
     td_idx = td_[(td_ < 15) & (td_ > 0)].index
-    original_data.loc[td_idx, "xvnew"] = td_[td_idx]
+    result.loc[td_idx, "xvnew"] = td_[td_idx]
 
     for _ in range(days+1):
         tmp = begin_date + datetime.timedelta(days=_)
@@ -82,9 +84,7 @@ def label():
     platforms = []
     tmp = (set(scoring_data.platform))
     for each_pf in tmp:
-        pf_data = scoring_data.loc[(scoring_data.platform == each_pf)
-                               & ((scoring_data.status == '出售中')
-                                  | (scoring_data.status == '上架'))]
+        pf_data = scoring_data.loc[scoring_data.platform == each_pf]
         platforms.append(pf_data)
     # tm_data = scoring_data.loc[(scoring_data.platform == 'TM') & (scoring_data.status == '出售中')]
     # jd_data = scoring_data.loc[(scoring_data.platform == 'JD') & (scoring_data.status == '上架')]
@@ -93,7 +93,7 @@ def label():
     print("开始计算热度")
     print('-' * 30)
     begin_time = time.time()
-    calculate_heat(platforms, original_data, scoring_data, begin_date, days)
+    calculate_heat(platforms, result, scoring_data, begin_date, days, root_dir)
     print("热度计算完成")
     end_time = time.time()
     print("时间段%d：所有店铺热度计算完成，用时%.2fs" % (score.a, end_time-begin_time))
@@ -104,13 +104,13 @@ def label():
     # 计算热度
     print("开始计算效度")
     print('-' * 30)
-    calculate_cer(platforms, original_data, scoring_data, begin_date, days)
+    calculate_cer(platforms, result, scoring_data, begin_date, days, root_dir)
     print("效度计算完成")
     end_time = time.time()
     print("时间段%d：所有店铺效度计算完成，用时%.2fs" % (score.a, end_time - begin_time))
     print('-' * 30)
 
-    original_data.loc[data.date >= begin_date].to_csv(
+    result.loc[data.date >= begin_date].to_csv(
         global_config["result_path"],
         encoding=global_config["encoding"],
         index=None)

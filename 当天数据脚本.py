@@ -2,6 +2,7 @@ import json
 import main
 import pandas
 import random
+import os
 
 
 def boom(fp, eco):
@@ -29,10 +30,15 @@ def boom(fp, eco):
 
     data.to_csv(fp, encoding=eco, index=None)
 
+
+# 包的根目录
+# root_dir = "/usr/local/data-integration/jobs/BB101/"
+root_dir = "e:/github/label program/"
 global_config = {
+    # 设置输入数据路径和结果存放路径
     "encoding": "utf8",
-    "data_path": "../data/bb.csv",
-    "result_path": "../result/bblabel.csv"
+    "data_path": root_dir + "bb.csv",
+    "result_path": root_dir + "result/bblabel.csv"
 }
 heat_config = {
   # k-means算法在不同字段的分类数K的取值
@@ -101,13 +107,17 @@ cer_config = {
 }
 """以上是可调整的参数"""
 
-for config_path, config in {"configures/global.json": global_config,
-                            "configures/heat.json": heat_config,
-                            "configures/cer.json": cer_config}.items():
+configures_path = os.path.join(root_dir, "configures")
+for path in [configures_path, global_config['result_path']]:
+    if not os.path.exists(path):
+        os.mkdir(path)
+for config_path, config in {os.path.join(configures_path, 'global.json'): global_config,
+                            os.path.join(configures_path, 'heat.json'): heat_config,
+                            os.path.join(configures_path, 'cer.json'): cer_config}.items():
     with open(config_path, "w") as f:
         json.dump(config, f, indent=4)
 
-# main.label()
+main.label(root_dir)
 boom(global_config["result_path"],
      global_config["encoding"])
 
