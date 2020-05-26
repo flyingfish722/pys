@@ -108,7 +108,7 @@ cer_config = {
 """以上是可调整的参数"""
 
 configures_path = os.path.join(root_dir, "configures")
-for path in [configures_path, global_config['result_path']]:
+for path in [configures_path, os.path.dirname(global_config['result_path'])]:
     if not os.path.exists(path):
         os.mkdir(path)
 for config_path, config in {os.path.join(configures_path, 'global.json'): global_config,
