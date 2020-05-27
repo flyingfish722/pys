@@ -7,7 +7,7 @@ import sys
 
 def str2date(s):
     # str -> date
-    ptn = r'(\d+)/(\d+)/(\d+)'
+    ptn = r'(\d+)[-/](\d+)[-/](\d+)'
     if s == 'old':
         return None
     try:
@@ -16,7 +16,8 @@ def str2date(s):
         print(e)
         print(s, "格式错误")
         sys.exit(0)
-    return datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+    # return datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+    return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
 
 
 def get_scores_of_best_kmeans_model(sr, n_clusters, scores):

@@ -68,11 +68,15 @@ def calculate_heat(platforms, original_data, scoring_data, begin_date, days, roo
                     idx = platform.loc[(platform.date == today_date) & (platform[tmp] == 0)].index
                     platform.loc[idx, 'score_' + tmp] = 0
                     idx = platform.loc[(platform.date == today_date) & (platform[tmp] != 0)].index
+                    if len(idx) >= 10:
+                        score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
+                                                                       k,
+                                                                       scores)
+                        platform.loc[idx, 'score_' + tmp] = score_result
+                    else:
+                        print(tmp, "非零样本数小于10")
+                        platform.loc[idx, 'score_' + tmp] = 100
 
-                    score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
-                                                                   k,
-                                                                   scores)
-                    platform.loc[idx, 'score_' + tmp] = score_result
             print()
         idx = platform.loc[platform.date >= begin_date].index
         platform.loc[idx, 'heat'] = 0
@@ -222,15 +226,20 @@ def calculate_cer(platforms, original_data, scoring_data, begin_date, days, root
                         idx = platform.loc[(platform.date == today_date) & (platform[tmp] == 0)].index
                         platform.loc[idx, 'score_' + tmp] = 0
                         idx = platform.loc[(platform.date == today_date) & (platform[tmp] != 0)].index
-                    try:
-                        score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
-                                                                       k,
-                                                                       scores[str(k)])
-                    except ValueError:
-                        print(tmp, "中包含空值")
-                        platform.to_csv('../exception.csv', encoding='ansi')
-                        sys.exit(0)
-                    platform.loc[idx, 'score_' + tmp] = score_result
+
+                    if len(idx) >= 10:
+                        try:
+                            score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
+                                                                           k,
+                                                                           scores[str(k)])
+                        except ValueError:
+                            print(tmp, "中包含空值")
+                            platform.to_csv('../exception.csv', encoding='ansi')
+                            sys.exit(0)
+                        platform.loc[idx, 'score_' + tmp] = score_result
+                    else:
+                        print(tmp, "非零样本数小于10")
+                        platform.loc[idx, 'score_' + tmp] = 100
             print()
         idx = platform.loc[platform.date >= begin_date].index
         platform.loc[idx, 'cer'] = 0

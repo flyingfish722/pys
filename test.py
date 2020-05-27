@@ -10,11 +10,14 @@ import functions
 import copy
 import numpy
 
+
 data = pandas.Series([1,2,], index = [1,2,])
 
-data2 = pandas.DataFrame([[1,2,3],[4,5,6]], index=[0,1], columns=["a", "b", "c"])
+data2 = pandas.DataFrame([[1.1111,2.,3.],[4.3242342,5.,6.]], index=[0,1], columns=["a", "b", "c"])
 data3 = pandas.DataFrame([[10,20,30],[40,50,60]], index=[1,2], columns=["a", "b", "c"])
-print(data2 + data3 + data3)
+d = data3 * numpy.random.rand(2, 3)
+print(d)
+print(1-numpy.random.rand(2, 3))
 
 
 

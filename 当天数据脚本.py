@@ -1,39 +1,39 @@
 import json
 import main
 import pandas
-import random
 import os
+import numpy
 
 
 def boom(fp, eco):
     data = pandas.read_csv(fp, encoding=eco)
     idx = data.heat[data.heat >= 40].index
-    data.loc[idx, "heat"] = data.loc[idx, "heat"] * (1 - random.random()*0.003)
+    data.loc[idx, "heat"] = data.loc[idx, "heat"] * (1 - numpy.random.rand(len(idx))*0.003)
     idx = data.heat[data.heat < 40].index
-    data.loc[idx, "heat"] = data.loc[idx, "heat"] * (1 + random.random()*0.005)
+    data.loc[idx, "heat"] = data.loc[idx, "heat"] * (1 + numpy.random.rand(len(idx))*0.005)
     idx = data.cer[(data.xvnew >=2) & (data.xvnew <= 15) & (data.cer >= 40)].index
-    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 + random.random() * 0.005)
+    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 + numpy.random.rand(len(idx)) * 0.005)
     idx = data.cer[(data.xvnew >=2) & (data.xvnew <= 15) & (data.cer < 40)].index
-    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - random.random() * 0.003)
+    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - numpy.random.rand(len(idx)) * 0.003)
     idx = data.cer[(data.xvnew.isnull()) & (data.cer >= 90)].index
-    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - random.random() * 0.003)
+    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - numpy.random.rand(len(idx)) * 0.003)
     idx = data.cer[(data.xvnew.isnull()) & (data.cer >= 40) & (data.cer < 90)].index
-    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 + random.random() * 0.005)
+    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 + numpy.random.rand(len(idx)) * 0.005)
     idx = data.cer[(data.xvnew.isnull()) & (data.cer >= 30) & (data.cer < 40)].index
-    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - random.random() * 0.003)
+    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - numpy.random.rand(len(idx)) * 0.003)
     idx = data.cer[(data.xvnew.isnull()) & (data.cer < 30)].index
-    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - random.random() * 0.005)
+    data.loc[idx, "cer"] = data.loc[idx, "cer"] * (1 - numpy.random.rand(len(idx)) * 0.005)
 
     idx = data.heat[data.xvnew == 1].index
     data.loc[idx, "heat"] = 0
     data.loc[idx, "cer"] = 50
 
-    data.to_csv(fp, encoding=eco, index=None)
+    data.round(decimals=5).to_csv(fp, encoding=eco, index=None)
 
 
 # 包的根目录
 # root_dir = "/usr/local/data-integration/jobs/BB101/"
-root_dir = "e:/github/label program/"
+root_dir = "D:/ProgramData/IDEprojects/PycharmProjects/labelprogram/"
 global_config = {
     # 设置输入数据路径和结果存放路径
     "encoding": "utf8",
@@ -108,7 +108,7 @@ cer_config = {
 """以上是可调整的参数"""
 
 configures_path = os.path.join(root_dir, "configures")
-for path in [configures_path, global_config['result_path']]:
+for path in [configures_path, os.path.dirname(global_config['result_path'])]:
     if not os.path.exists(path):
         os.mkdir(path)
 for config_path, config in {os.path.join(configures_path, 'global.json'): global_config,
