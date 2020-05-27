@@ -28,7 +28,7 @@ def boom(fp, eco):
     data.loc[idx, "heat"] = 0
     data.loc[idx, "cer"] = 50
 
-    data.round(decimals=5).to_csv(fp, encoding=eco, index=None)
+    data.to_csv(fp, encoding=eco, index=None, float_format='%.5f')
 
 
 # 包的根目录
