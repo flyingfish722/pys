@@ -71,7 +71,7 @@ def calculate_heat(platforms, original_data, scoring_data, begin_date, days, roo
                     if len(idx) >= 10:
                         score_result = get_scores_of_best_kmeans_model(platform.loc[idx, tmp],
                                                                        k,
-                                                                       scores)
+                                                                       scores[str(k)])
                         platform.loc[idx, 'score_' + tmp] = score_result
                     else:
                         print(tmp, "非零样本数小于10")

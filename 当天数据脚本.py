@@ -50,8 +50,11 @@ heat_config = {
     "trans_rate_relative": 4
   },
 
-  # "or k = 4,
-  "scores": [25, 50, 75, 100],
+    # k-means中不同k值的打分
+    "scores": {
+        "4": [25, 50, 75, 100],
+        "5": [20, 40, 60, 80, 100]
+    },
 
   # 计算cer_n时，不同字段得分的权重
   "score_weights": {
